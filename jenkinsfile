@@ -2,31 +2,35 @@ pipeline {
     agent any
 
     environment {
-        DOCKER_USER = 'your-dockerhub-username'
+        DOCKER_USER = 'azizzouaghia'
         IMAGE_NAME = 'student-management'
-        IMAGE_TAG = "${env.BUILD_NUMBER}"
     }
+    
     tools {
         maven 'MAVEN_HOME' 
     }
 
     stages {
-
         stage('Compile & Test') {
             steps {
                 sh 'mvn clean install -DskipTests'
             }
         }
+        
         stage('Build Docker Image') {
             steps {
-                sh "docker build -t azizzouaghia/${IMAGE_NAME}:${IMAGE_TAG} ."
-                sh "docker build -t azizzouaghia/${IMAGE_NAME}:latest ."
+                sh "docker build -t ${DOCKER_USER}/${IMAGE_NAME}:${env.BUILD_NUMBER} ."
+                sh "docker build -t ${DOCKER_USER}/${IMAGE_NAME}:latest ."
             }
         }
+        
         stage('Push to Docker Hub') {
             steps {
-                sh "sudo docker push azizzouaghia/${IMAGE_NAME}:${IMAGE_TAG}"
-                sh "sudo docker push azizzouaghia/${IMAGE_NAME}:latest"
+                withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER_VAR')]) {
+                    sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER_VAR --password-stdin"
+                    sh "sudo docker push ${DOCKER_USER}/${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    sh "sudo docker push ${DOCKER_USER}/${IMAGE_NAME}:latest"
+                }
             }
         }
     }
@@ -43,6 +47,7 @@ pipeline {
                     </h2>
                     <p>Project: ${env.JOB_NAME}</p>
                     <p>Build Number: #${env.BUILD_NUMBER}</p>
+                    <p>Docker Image: ${DOCKER_USER}/${IMAGE_NAME}:${env.BUILD_NUMBER}</p>
                     <p>Check details: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
                     <pre style="background: #f4f4f4; padding: 10px;">\${BUILD_LOG, maxLines=15}</pre>
                 </body>
