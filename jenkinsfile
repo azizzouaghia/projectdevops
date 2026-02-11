@@ -28,8 +28,8 @@ pipeline {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER_VAR')]) {
                     sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER_VAR --password-stdin"
-                    sh "sudo docker push ${DOCKER_USER}/${IMAGE_NAME}:${env.BUILD_NUMBER}"
-                    sh "sudo docker push ${DOCKER_USER}/${IMAGE_NAME}:latest"
+                    sh "docker push ${DOCKER_USER}/${IMAGE_NAME}:${env.BUILD_NUMBER}"
+                    sh "docker push ${DOCKER_USER}/${IMAGE_NAME}:latest"
                 }
             }
         }
