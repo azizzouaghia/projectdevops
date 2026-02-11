@@ -32,7 +32,7 @@ pipeline {
                     <p>Project: ${env.JOB_NAME}</p>
                     <p>Build Number: #${env.BUILD_NUMBER}</p>
                     <p>Check details: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
-                    <pre style="background: #f4f4f4; padding: 10px;">${BUILD_LOG, maxLines=15}</pre>
+                    <pre style="background: #f4f4f4; padding: 10px;">\${BUILD_LOG, maxLines=15}</pre>
                 </body>
                 </html>""",
                 to: 'azizzouaghia02@gmail.com, natevarik.16@gmail.com',
