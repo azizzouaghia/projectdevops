@@ -6,11 +6,6 @@ pipeline {
     }
 
     stages {
-        stage('Checkout') {
-            steps {
-                git 'https://github.com/azizzouaghia/projectdevops.git'
-            }
-        }
 
         stage('Compile & Test') {
             steps {
