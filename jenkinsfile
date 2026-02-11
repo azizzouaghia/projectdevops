@@ -1,0 +1,43 @@
+pipeline {
+    agent any
+
+    tools {
+        maven 'maven' 
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                git 'https://github.com/azizzouaghia/projectdevops.git'
+            }
+        }
+
+        stage('Compile & Test') {
+            steps {
+                sh 'mvn clean install -DskipTests'
+            }
+        }
+    }
+
+    post {
+        always {
+            emailext (
+                subject: "[Jenkins] ${currentBuild.currentResult}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: """<!DOCTYPE html>
+                <html>
+                <body style="font-family: Arial; border: 1px solid #ddd; padding: 20px;">
+                    <h2 style="color: ${currentBuild.currentResult == 'SUCCESS' ? '#2ecc71' : '#e74c3c'};">
+                        BUILD ${currentBuild.currentResult}
+                    </h2>
+                    <p>Project: ${env.JOB_NAME}</p>
+                    <p>Build Number: #${env.BUILD_NUMBER}</p>
+                    <p>Check details: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
+                    <pre style="background: #f4f4f4; padding: 10px;">${BUILD_LOG, maxLines=15}</pre>
+                </body>
+                </html>""",
+                to: 'azizzouaghia02@gmail.com, natevarik.16@gmail.com',
+                mimeType: 'text/html'
+            )
+        }
+    }
+}
