@@ -3,8 +3,7 @@ pipeline {
 
     environment {
         DOCKER_USER = 'azizzouaghia'
-        IMAGE_NAME = 'student-management'
-        // Replace with your Vagrant VM IP or use localhost if configured
+        IMAGE_NAME = 'spring-k8s-app' // Name used in your teacher's YAML
         SONAR_HOST_URL = 'http://192.168.50.4:9000' 
     }
     
@@ -21,26 +20,34 @@ pipeline {
 
         stage('SONARQUBE Analysis') {
             steps {
-                // withCredentials fetches the token you saved in Jenkins as 'sonarqube'
                 withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_TOKEN')]) {
                     sh "mvn sonar:sonar -Dsonar.projectKey=devops_git -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.token=${SONAR_TOKEN}"
                 }
             }
         }
         
-        stage('Build Docker Image') {
-            steps {
-                sh "docker build -t ${DOCKER_USER}/${IMAGE_NAME}:${env.BUILD_NUMBER} ."
-                sh "docker build -t ${DOCKER_USER}/${IMAGE_NAME}:latest ."
-            }
-        }
-        
-        stage('Push to Docker Hub') {
+        stage('Build & Push Docker Image') {
             steps {
                 withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'DOCKER_PASS', usernameVariable: 'DOCKER_USER_VAR')]) {
                     sh "echo \$DOCKER_PASS | docker login -u \$DOCKER_USER_VAR --password-stdin"
+                    sh "docker build -t ${DOCKER_USER}/${IMAGE_NAME}:${env.BUILD_NUMBER} ."
+                    sh "docker tag ${DOCKER_USER}/${IMAGE_NAME}:${env.BUILD_NUMBER} ${DOCKER_USER}/${IMAGE_NAME}:latest"
                     sh "docker push ${DOCKER_USER}/${IMAGE_NAME}:${env.BUILD_NUMBER}"
                     sh "docker push ${DOCKER_USER}/${IMAGE_NAME}:latest"
+                }
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                // This 'kubeconfig' ID must match the Secret File you upload to Jenkins
+                withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG')]) {
+                    sh "kubectl apply -f k8s/mysql-secret.yaml"
+                    sh "kubectl apply -f k8s/mysql-service.yaml"
+                    sh "kubectl apply -f k8s/mysql-deployment.yaml"
+                    sh "kubectl apply -f k8s/app-config.yaml"
+                    sh "kubectl apply -f k8s/spring-service.yaml"
+                    sh "kubectl apply -f k8s/spring-deployment.yaml"
                 }
             }
         }
@@ -50,20 +57,9 @@ pipeline {
         always {
             emailext (
                 subject: "[Jenkins] ${currentBuild.currentResult}: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                body: """<!DOCTYPE html>
-                <html>
-                <body style="font-family: Arial; border: 1px solid #ddd; padding: 20px;">
-                    <h2 style="color: ${currentBuild.currentResult == 'SUCCESS' ? '#2ecc71' : '#e74c3c'};">
-                        BUILD ${currentBuild.currentResult}
-                    </h2>
-                    <p>Project: ${env.JOB_NAME}</p>
-                    <p>Build Number: #${env.BUILD_NUMBER}</p>
-                    <p>SonarQube Report: <a href="${SONAR_HOST_URL}">${SONAR_HOST_URL}</a></p>
-                    <p>Docker Image: ${DOCKER_USER}/${IMAGE_NAME}:${env.BUILD_NUMBER}</p>
-                    <p>Check details: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
-                    <pre style="background: #f4f4f4; padding: 10px;">\${BUILD_LOG, maxLines=15}</pre>
-                </body>
-                </html>""",
+                body: """<h2>BUILD ${currentBuild.currentResult}</h2>
+                         <p>Docker Image: ${DOCKER_USER}/${IMAGE_NAME}:${env.BUILD_NUMBER}</p>
+                         <p>Check SonarQube: <a href="${SONAR_HOST_URL}">${SONAR_HOST_URL}</a></p>""",
                 to: 'azizzouaghia02@gmail.com, natevarik.16@gmail.com',
                 mimeType: 'text/html'
             )

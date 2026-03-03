@@ -13,21 +13,16 @@ spec:
         app: spring
     spec:
       containers:
-      - name: spring
-        image: tarekayari1/spring-k8s-app:1.0
-        ports:
-        - containerPort: 8080
-        envFrom:
-        - configMapRef:
-            name: app-config
-        env:
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: mysql-secret
-              key: MYSQL_ROOT_PASSWORD
-
-
-
-      
-
+        - name: spring
+          image: azizzouaghia/spring-k8s-app:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: app-config
+          env:
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mysql-secret
+                  key: MYSQL_ROOT_PASSWORD
