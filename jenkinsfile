@@ -4,6 +4,8 @@ pipeline {
     environment {
         DOCKER_USER = 'azizzouaghia'
         IMAGE_NAME = 'student-management'
+        // Replace with your Vagrant VM IP or use localhost if configured
+        SONAR_HOST_URL = 'http://192.168.50.4:9000' 
     }
     
     tools {
@@ -14,6 +16,15 @@ pipeline {
         stage('Compile & Test') {
             steps {
                 sh 'mvn clean install -DskipTests'
+            }
+        }
+
+        stage('SONARQUBE Analysis') {
+            steps {
+                // withCredentials fetches the token you saved in Jenkins as 'sonarqube'
+                withCredentials([string(credentialsId: 'sonarqube', variable: 'SONAR_TOKEN')]) {
+                    sh "mvn sonar:sonar -Dsonar.projectKey=devops_git -Dsonar.host.url=${SONAR_HOST_URL} -Dsonar.token=${SONAR_TOKEN}"
+                }
             }
         }
         
@@ -47,6 +58,7 @@ pipeline {
                     </h2>
                     <p>Project: ${env.JOB_NAME}</p>
                     <p>Build Number: #${env.BUILD_NUMBER}</p>
+                    <p>SonarQube Report: <a href="${SONAR_HOST_URL}">${SONAR_HOST_URL}</a></p>
                     <p>Docker Image: ${DOCKER_USER}/${IMAGE_NAME}:${env.BUILD_NUMBER}</p>
                     <p>Check details: <a href="${env.BUILD_URL}">${env.BUILD_URL}</a></p>
                     <pre style="background: #f4f4f4; padding: 10px;">\${BUILD_LOG, maxLines=15}</pre>
