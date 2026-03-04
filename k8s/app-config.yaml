@@ -5,9 +5,4 @@ metadata:
 data:
   DB_HOST: mysql
   DB_USER: root
-  DB_PASSWORD: cGFzc3dvcmQ=
-
-
-
-      
-
+  # DB_PASSWORD is removed here because it's being pulled from the Secret in your deployment
