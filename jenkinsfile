@@ -51,7 +51,8 @@ pipeline {
                 }
             }
         }
-    }post {
+    }
+post {
     always {
         emailext (
             subject: "[${currentBuild.currentResult}] ${env.JOB_NAME} - Build #${env.BUILD_NUMBER}",
